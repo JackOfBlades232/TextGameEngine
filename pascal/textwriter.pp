@@ -8,12 +8,13 @@ interface
 procedure WriteTextToScreen(
     var TextStr: string; 
     x, y, MinX, MaxX, MinY, MaxY: integer; 
-    DelayMs: integer;
     var ok: boolean
 );
 
 implementation
 uses crt;
+const
+    TextWritingDelay = 65; { 0.065s }
 
 function ConstraintsAreValid(MinX, MaxX, MinY, MaxY: integer) : boolean;
 begin
@@ -25,13 +26,12 @@ end;
 function CoordinatesAreValid(x, y, MinX, MaxX, MinY, MaxY: integer) : boolean;
 begin
     CoordinatesAreValid := 
-        (x >= MinX) and (x <= MaxX) and (y >= MinY) and (Y <= MaxY)
+        (x >= MinX) and (x <= MaxX) and (y >= MinY) and (y <= MaxY)
 end;
 
 procedure WriteTextToScreen(
     var TextStr: string; 
     x, y, MinX, MaxX, MinY, MaxY: integer; 
-    DelayMs: integer;
     var ok: boolean
 );
 var
@@ -48,7 +48,7 @@ begin
     GotoXY(x, y);
     for i := 1 to length(TextStr) do
     begin
-        delay(DelayMs);
+        delay(TextWritingDelay);
         write(TextStr[i]);
         x := x + 1;
         
