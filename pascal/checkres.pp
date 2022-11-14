@@ -4,15 +4,15 @@ unit CheckRes; { checkres.pp }
         is big enough for provided requirements
 }
 interface
+const
+    MinTerminalWidth = 80;
+    MinTerminalHeight = 24;
 
 function CheckTerminalResolution : boolean;
 procedure RaiseTerminalSizeError;
 
 implementation
 uses crt;
-const
-    MinTerminalWidth = 80;
-    MinTerminalHeight = 24;
 
 function CheckTerminalResolution : boolean;
 begin

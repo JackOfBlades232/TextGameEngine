@@ -36,6 +36,7 @@ procedure WriteTextToScreen(
 );
 var
     i: integer;
+    c: char;
 begin
     ok := false;
     if not ConstraintsAreValid(MinX, MaxX, MinY, MaxY) then
@@ -49,6 +50,10 @@ begin
     for i := 1 to length(TextStr) do
     begin
         delay(TextWritingDelay);
+
+        if KeyPressed then
+            c := ReadKey; { eat up input }
+
         write(TextStr[i]);
         x := x + 1;
         

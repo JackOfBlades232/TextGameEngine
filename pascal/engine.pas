@@ -5,7 +5,6 @@ program Engine; { engine.pas }
 }
 uses crt, CheckRes, UI, controls;
 const
-    { TODO : introduce checking for params}
     FrameDuration = 10; { 0.01s }
 
 procedure SaveStates(var SaveTextAttr: integer);
@@ -18,57 +17,76 @@ begin
     TextAttr := SaveTextAttr
 end;
 
-label
-    Start, Quit, Deinitialization;
-var
-    TerminalResOk, StringWrittenOk: boolean;
-    SaveTextAttr: integer;
-    PlayerAction: ControlsAction;
-    { testing }
-    HelloMsg: string = 'Hello, world!';
-    Lbl1: string = 'a: ';
-    Ans1: string = 'Hola back!';
-    Lbl2: string = 'b: ';
-    Ans2: string = 'What?';
-    Lbl3: string = 'c: ';
-    Ans3: string = 'Bugger off!';
-    AnsIndex, NumAnswers: integer;
+procedure InitializeGame(var SaveTextAttr: integer; var ok: boolean);
 begin
     SaveStates(SaveTextAttr);
 
-    TerminalResOk := CheckTerminalResolution;
-    if not TerminalResOk then
+    ok := CheckTerminalResolution;
+    if not ok then
     begin
         RaiseTerminalSizeError;
-        goto Deinitialization
+        exit
     end;
 
-    InitConstraints;
+    InitConstraints(ok);
+    if not ok then
+    begin
+        RaiseConstraintsError;
+        exit
+    end;
+end;
+    
+{$IFDEF TEST}
+{$ENDIF}
+
+label
+    Start, Quit, Deinitialization;
+var
+    InitializationOk, StringWrittenOk: boolean;
+    SaveTextAttr: integer;
+    PlayerAction: ControlsAction;
+{$IFDEF TEST}
+    HelloMsg: string = 'Hello, world!';
+    labels: array [1..3] of string;
+    answers: array [1..3] of string;
+    AnsIndex: integer;
+{$ENDIF}
+begin
+    InitializeGame(SaveTextAttr, InitializationOk);
+
+    if not InitializationOk then
+        goto Deinitialization;
 
 Start:
     clrscr;
 
-    { testing } 
+{$IFDEF TEST}
+    StringWrittenOk := AnswersFitOnScreen(length(answers));
+    if not StringWrittenOk then
+        goto Quit;
+
+    for AnsIndex := 1 to length(labels) do
+        labels[AnsIndex] := chr(AnsIndex + ord('a') - 1) + ': ';
+
+    answers[1] := 'Hola back.';
+    answers[2] := 'What?';
+    answers[3] := 'Bugger off!';
+
     WriteTextPage(HelloMsg, StringWrittenOk);
     delay(1000);
 
-    AnsIndex := 1;
-    WriteAnswerVariant(Lbl1, Ans1, AnsIndex, StringWrittenOk);
-    delay(100);
-    AnsIndex := AnsIndex + 1;
-    WriteAnswerVariant(Lbl2, Ans2, AnsIndex, StringWrittenOk);
-    delay(100);
-    AnsIndex := AnsIndex + 1;
-    WriteAnswerVariant(Lbl3, Ans3, AnsIndex, StringWrittenOk);
-    delay(1000);
+    for AnsIndex := 1 to length(answers) do
+    begin
+        delay(100);
+        WriteAnswerVariant(labels[AnsIndex], answers[AnsIndex],
+            AnsIndex, StringWrittenOk)
+    end;
 
-    NumAnswers := AnsIndex;
+    delay(1000);
 
     AnsIndex := 1;
     SelectAnswer(AnsIndex);
     delay(100);
-
-    ControlsGet(PlayerAction); { clear buffer }
 
     while true do
     begin
@@ -79,13 +97,14 @@ Start:
             PressEnter:
                 goto Start;
             PressUp:
-                SwitchAnswer(AnsIndex, -1, NumAnswers);
+                SwitchAnswer(AnsIndex, -1, length(answers));
             PressDown:
-                SwitchAnswer(AnsIndex, 1, NumAnswers)
+                SwitchAnswer(AnsIndex, 1, length(answers))
         end;
 
         delay(FrameDuration)
     end;
+{$ENDIF}
 
 Quit:
     clrscr;

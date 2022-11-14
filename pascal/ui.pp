@@ -1,19 +1,24 @@
 unit UI; { ui.pp }
+{
+    Contains functionality for the ui part of the game
+}
 interface
 
-procedure InitConstraints;
+procedure InitConstraints(var ok: boolean);
+procedure RaiseConstraintsError;
 
 procedure WriteTextPage(var content: string; var ok: boolean);
 procedure WriteAnswerVariant(var lbl, content: string; 
     index: integer; var ok: boolean);
 
+function AnswersFitOnScreen(NumAnswers: integer): boolean;
+
 procedure SelectAnswer(index: integer);
 procedure SwitchAnswer(var index: integer; DeltaIndex, MaxIndex: integer);
 
 implementation
-uses crt, TextWriter;
+uses crt, TextWriter, CheckRes;
 const
-    { TODO : introduce checking for params}
     TextWindowMinXFromCenter = -38;
     TextWindowMaxXFromCenter = 38;
     TextWindowMinYFromCenter = -11;
@@ -28,18 +33,28 @@ var
     TextMinX, TextMaxX, TextMinY, TextMaxY: integer;
     AnswerMinX, AnswerMaxX: integer;
 
+procedure RaiseConstraintsError;
+begin
+    clrscr;
+    writeln(ErrOutput, 'Please change ui parameters or terminal size,',
+        ' they are not matching');
+end;
+
 { constraints preparation }
 procedure CalcTextBoxConstraints(CenterX, CenterY: integer); forward;
 procedure CalcAnswerHorizConstraints(CenterX: integer); forward;
+function ConstraintsFitScreen: boolean; forward;
 
-procedure InitConstraints;
+procedure InitConstraints(var ok: boolean);
 var
     CenterX, CenterY: integer;
 begin
     CenterX := ScreenWidth div 2;
     CenterY := ScreenHeight div 2;
     CalcTextBoxConstraints(CenterX, CenterY);
-    CalcAnswerHorizConstraints(CenterX)
+    CalcAnswerHorizConstraints(CenterX);
+
+    ok := ConstraintsFitScreen
 end;
 
 procedure CalcTextBoxConstraints(CenterX, CenterY: integer);
@@ -55,6 +70,37 @@ begin
     AnswerMinX := CenterX + AnswerMinXFromCenter; 
     AnswerMaxX := CenterX + AnswerMaxXFromCenter 
 end;
+
+function ConstraintsFitScreen: boolean;
+var
+    MaxY: integer;
+begin
+    ConstraintsFitScreen := (TextMinX >= 1) and 
+        (TextMaxX <= ScreenWidth) and (TextMinY >= 1) and
+        (TextMaxY <= ScreenHeight) and (AnswerMinX >= 1) and
+        (AnswerMaxX <= ScreenWidth) and (TextMinY <= TextMaxY) and
+        (TextMinX <= TextMaxX) and (AnswerMinX <= AnswerMaxX);
+
+    ConstraintsFitScreen := ConstraintsFitScreen and
+        (TextToAnswerOffset >= 1) and (AnswerBoxHeight >= 1) and 
+        (AnswerScreenBottomMinPadding >= 1);
+
+    MaxY := TextMaxY + TextToAnswerOffset +
+        AnswerBoxHeight + AnswerScreenBottomMinPadding;
+    ConstraintsFitScreen := ConstraintsFitScreen and (MaxY <= ScreenHeight)
+end;
+    
+{ validity checking }
+function AnswersFitOnScreen(NumAnswers: integer): boolean;
+var
+    MaxY: integer;
+begin
+    MaxY := TextMaxY + TextToAnswerOffset +
+        (AnswerBoxHeight + AnswerVerticalPadding) * (NumAnswers - 1) +
+        AnswerBoxHeight + AnswerScreenBottomMinPadding;
+    AnswersFitOnScreen := MaxY <= ScreenHeight
+end;
+    
 
 { text writing }
 procedure WriteTextPage(var content: string; var ok: boolean);
