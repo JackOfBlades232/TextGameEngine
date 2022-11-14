@@ -29,6 +29,7 @@ const
     AnswerBoxHeight = 1;
     AnswerVerticalPadding = 1;
     AnswerScreenBottomMinPadding = 2;
+    PaddingForSelectSymbol = 2;
 var
     TextMinX, TextMaxX, TextMinY, TextMaxY: integer;
     AnswerMinX, AnswerMaxX: integer;
@@ -40,10 +41,17 @@ begin
         ' they are not matching');
 end;
 
+{ generally used functions declarations }
+function AnswerMinY(index: integer): integer; forward;
+function AnswerMaxY(index: integer): integer; forward;
+
 { constraints preparation }
 procedure CalcTextBoxConstraints(CenterX, CenterY: integer); forward;
 procedure CalcAnswerHorizConstraints(CenterX: integer); forward;
 function ConstraintsFitScreen: boolean; forward;
+function MinMaxValuesAreValid(min, max, TrueMin, TrueMax: integer): boolean;
+    forward;
+function ValueIsPositive(value: integer): boolean; forward;
 
 procedure InitConstraints(var ok: boolean);
 var
@@ -72,22 +80,27 @@ begin
 end;
 
 function ConstraintsFitScreen: boolean;
-var
-    MaxY: integer;
 begin
-    ConstraintsFitScreen := (TextMinX >= 1) and 
-        (TextMaxX <= ScreenWidth) and (TextMinY >= 1) and
-        (TextMaxY <= ScreenHeight) and (AnswerMinX >= 1) and
-        (AnswerMaxX <= ScreenWidth) and (TextMinY <= TextMaxY) and
-        (TextMinX <= TextMaxX) and (AnswerMinX <= AnswerMaxX);
+    ConstraintsFitScreen := 
+        MinMaxValuesAreValid(TextMinX, TextMaxX, 1, ScreenWidth) and
+        MinMaxValuesAreValid(TextMinY, TextMaxY, 1, ScreenHeight) and
+        MinMaxValuesAreValid(AnswerMinX, AnswerMaxX, 
+            1 + PaddingForSelectSymbol, ScreenWidth) and
+        ValueIsPositive(TextToAnswerOffset) and
+        ValueIsPositive(AnswerBoxHeight) and
+        ValueIsPositive(AnswerScreenBottomMinPadding) and
+        AnswersFitOnScreen(1)
+end;
 
-    ConstraintsFitScreen := ConstraintsFitScreen and
-        (TextToAnswerOffset >= 1) and (AnswerBoxHeight >= 1) and 
-        (AnswerScreenBottomMinPadding >= 1);
+function MinMaxValuesAreValid(min, max, TrueMin, TrueMax: integer): boolean;
+begin
+    MinMaxValuesAreValid := 
+        (min <= max) and (min >= TrueMin) and (max <= TrueMax)
+end;
 
-    MaxY := TextMaxY + TextToAnswerOffset +
-        AnswerBoxHeight + AnswerScreenBottomMinPadding;
-    ConstraintsFitScreen := ConstraintsFitScreen and (MaxY <= ScreenHeight)
+function ValueIsPositive(value: integer): boolean;
+begin
+    ValueIsPositive := value > 0
 end;
     
 { validity checking }
@@ -95,9 +108,7 @@ function AnswersFitOnScreen(NumAnswers: integer): boolean;
 var
     MaxY: integer;
 begin
-    MaxY := TextMaxY + TextToAnswerOffset +
-        (AnswerBoxHeight + AnswerVerticalPadding) * (NumAnswers - 1) +
-        AnswerBoxHeight + AnswerScreenBottomMinPadding;
+    MaxY := AnswerMaxY(NumAnswers) + AnswerScreenBottomMinPadding;
     AnswersFitOnScreen := MaxY <= ScreenHeight
 end;
     
@@ -124,9 +135,8 @@ begin
         exit
     end;
 
-    MinY := TextMaxY + 1 + TextToAnswerOffset + 
-            (AnswerBoxHeight + AnswerVerticalPadding) * (index - 1);
-    MaxY := MinY + AnswerBoxHeight - 1;
+    MinY := AnswerMinY(index);
+    MaxY := AnswerMaxY(index);
     x := AnswerMinX;
 
     WriteTextToScreen(
@@ -151,6 +161,7 @@ end;
 
 { answer selection }
 procedure DeselectAnswer(index: integer); forward;
+procedure DrawSymbolNextToAnswer(symbol: char; index: integer); forward;
 procedure TruncateIndex(var index: integer; MinVal, MaxVal: integer); forward;
 
 procedure SwitchAnswer(var index: integer; DeltaIndex, MaxIndex: integer);
@@ -162,26 +173,23 @@ begin
 end;
 
 procedure SelectAnswer(index: integer);
-var
-    x, y: integer;
 begin
-    x := AnswerMinX - 2;
-    y := TextMaxY + 1 + TextToAnswerOffset + 
-         (AnswerBoxHeight + AnswerVerticalPadding) * (index - 1);
-    GotoXY(x, y);
-    write('>');
-    GotoXY(1, 1)
+    DrawSymbolNextToAnswer('>', index)
 end;
 
 procedure DeselectAnswer(index: integer);
+begin
+    DrawSymbolNextToAnswer(' ', index)
+end;
+
+procedure DrawSymbolNextToAnswer(symbol: char; index: integer);
 var
     x, y: integer;
 begin
-    x := AnswerMinX - 2;
-    y := TextMaxY + 1 + TextToAnswerOffset + 
-         (AnswerBoxHeight + AnswerVerticalPadding) * (index - 1);
+    x := AnswerMinX - PaddingForSelectSymbol;
+    y := AnswerMinY(index);
     GotoXY(x, y);
-    write(' ');
+    write(symbol);
     GotoXY(1, 1)
 end;
 
@@ -191,6 +199,18 @@ begin
         index := MinVal
     else if index > MaxVal then
         index := MaxVal
+end;
+
+{ general helper functions }
+function AnswerMinY(index: integer): integer;
+begin
+    AnswerMinY := TextMaxY + TextToAnswerOffset + 1 +
+        (AnswerBoxHeight + AnswerVerticalPadding) * (index - 1)
+end;
+
+function AnswerMaxY(index: integer): integer;
+begin
+    AnswerMaxY := AnswerMinY(index) + AnswerBoxHeight - 1
 end;
 
 end.

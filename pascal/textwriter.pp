@@ -17,17 +17,11 @@ const
     TextWritingDelay = 65; { 0.065s }
 
 function ConstraintsAreValid(MinX, MaxX, MinY, MaxY: integer) : boolean;
-begin
-    ConstraintsAreValid := 
-        (MinX >= 1) and (MaxX >= MinX) and (MaxX <= ScreenWidth) and
-        (MinY >= 1) and (MaxY >= MinY) and (MaxY <= ScreenHeight)
-end;
-
+    forward;
 function CoordinatesAreValid(x, y, MinX, MaxX, MinY, MaxY: integer) : boolean;
-begin
-    CoordinatesAreValid := 
-        (x >= MinX) and (x <= MaxX) and (y >= MinY) and (y <= MaxY)
-end;
+    forward;
+
+procedure EatUpInput; forward;
 
 procedure WriteTextToScreen(
     var TextStr: string; 
@@ -36,7 +30,6 @@ procedure WriteTextToScreen(
 );
 var
     i: integer;
-    c: char;
 begin
     ok := false;
     if not ConstraintsAreValid(MinX, MaxX, MinY, MaxY) then
@@ -50,9 +43,7 @@ begin
     for i := 1 to length(TextStr) do
     begin
         delay(TextWritingDelay);
-
-        if KeyPressed then
-            c := ReadKey; { eat up input }
+        EatUpInput;
 
         write(TextStr[i]);
         x := x + 1;
@@ -69,6 +60,27 @@ begin
     end;
 
     ok := true
+end;
+
+function ConstraintsAreValid(MinX, MaxX, MinY, MaxY: integer) : boolean;
+begin
+    ConstraintsAreValid := 
+        (MinX >= 1) and (MaxX >= MinX) and (MaxX <= ScreenWidth) and
+        (MinY >= 1) and (MaxY >= MinY) and (MaxY <= ScreenHeight)
+end;
+
+function CoordinatesAreValid(x, y, MinX, MaxX, MinY, MaxY: integer) : boolean;
+begin
+    CoordinatesAreValid := 
+        (x >= MinX) and (x <= MaxX) and (y >= MinY) and (y <= MaxY)
+end;
+
+procedure EatUpInput;
+var
+    c: char;
+begin
+    if KeyPressed then
+        c := ReadKey 
 end;
 
 end.
